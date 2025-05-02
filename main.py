@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 import requests
+import os
 
 app = FastAPI()
 
@@ -34,7 +35,7 @@ async def fetch_abilities(number: int):
 
 
 @app.get("/flavor/{number}")
-async def fetch_flavor(number: int):
+def fetch_flavor(number: int):
     url: str = f"https://pokeapi.co/api/v2/pokemon-species/{number}/"
     response = requests.get(url)
     response.raise_for_status()
@@ -48,5 +49,46 @@ async def fetch_flavor(number: int):
         if language_name in ["ja", "ja-Hrkt"]:
             flavor_text = i.get("flavor_text")
             flavor_text_ja.append(flavor_text)
+    return flavor_text_ja
 
-    return {"flavor_text": flavor_text_ja}
+
+from dotenv import load_dotenv
+from google import genai
+
+
+def post_gemini(query) -> str:
+    """
+    Gemini APIにPOSTリクエストを送信する関数
+    """
+    load_dotenv()
+    API_KEY = os.environ.get("API_KEY")
+    client = genai.Client(api_key=API_KEY)
+
+    response = client.models.generate_content(
+        model="gemini-2.0-flash", contents=f"以下の内容に日本語で答えてください{query}"
+    )
+    return response.text
+
+
+@app.post("/gemini")
+def post_gemini_endpoint(query: str):
+    """
+    Gemini APIにPOSTリクエストを送信するエンドポイント
+    """
+    result = post_gemini(query)
+    return {"result": result}
+
+
+def flavor_summary(number: int) -> str:
+    flavor_text = fetch_flavor(number)
+    query = flavor_text
+    llm_result = post_gemini(query)
+    return llm_result
+
+
+@app.post("/gemini_summary")
+def post_gemini_endpoint2(number: int):
+    result = flavor_summary(number)
+    return {"result": result}
+
+
