@@ -65,7 +65,8 @@ def post_gemini(query) -> str:
     client = genai.Client(api_key=API_KEY)
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash", contents=f"以下の内容に日本語で答えてください{query}"
+        model="gemini-2.0-flash",
+        contents=f"以下の文は特定のポケモンの説明文を集めたものです。これらからポケモンの名前を予想して。その後説明文を総合した説明文を作って。以下の形式で出力して。(ポケモンの名前):(総合した説明文)。{query}",
     )
     return response.text
 
@@ -90,5 +91,3 @@ def flavor_summary(number: int) -> str:
 def post_gemini_endpoint2(number: int):
     result = flavor_summary(number)
     return {"result": result}
-
-
